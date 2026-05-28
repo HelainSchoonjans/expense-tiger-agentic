@@ -10,6 +10,31 @@ You're in a cloud-based development environment with **Kiro CLI** pre-installed 
 
 All the info you need is in the workshop guide. Follow the modules to deploy a real serverless application, walk through specs and steering files, run a full bug fix cycle, and measure productivity impact.
 
+## AWS Setup and CDK
+
+Install AWS CLi on WSL/Linux:
+
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip awscliv2.zip
+    sudo ./aws/install
+
+Configure AWS SSO:
+
+    aws configure sso-session
+
+Login
+
+    aws sso login --sso-session default
+
+
+Set the three env variables in your terminal:
+
+    export AWS_ACCESS_KEY_ID=
+    export AWS_SECRET_ACCESS_KEY=
+    export AWS_SESSION_TOKEN=
+
+Run the scripts in windows WSL and not in git bash or powershell as they are bash scripts. Don't change the region or adapt the script for Windows.
+
 ## Step 1: Login to Kiro CLI (Terminal)
 
 1. **Open a terminal** by clicking **Terminal** in the top menu, then **New Terminal**
@@ -86,3 +111,14 @@ Follow the instructions in the workshop guide. The first hands-on task is deploy
 This workspace contains the **Expense Tiger** application — a serverless expense management app built entirely with agentic AI. It serves as the hands-on workload for the workshop labs.
 
 For full app documentation (architecture, deployment, testing, troubleshooting), see [README_EXPENSE_APP.md](README_EXPENSE_APP.md).
+
+
+# Troubleshooting
+
+## Cloudfront invalidation is stuck at JSON payload
+
+Check in the console if the CloudFront url can be reached. The app might still be deployed. Also scroll above for ExpenseStack.WebsiteURL to prove website deployment.
+
+## Receipt extraction service is temporarily unavailable
+
+If you get this error when uploading a receipt...

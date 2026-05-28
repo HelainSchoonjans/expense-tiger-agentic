@@ -48,7 +48,7 @@ echo "==> Syncing frontend to S3"
 aws s3 sync "$FRONTEND_DIR" "s3://${SITE_BUCKET}" --delete --region "$REGION"
 
 echo "==> Invalidating CloudFront cache"
-aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*" --region "$REGION"
+aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --invalidation-batch "file://$SCRIPT_DIR/../invalidation-batch.json" --region "$REGION"
 
 echo "==> Deployment complete"
 echo "Website URL: ${WEBSITE_URL}"
