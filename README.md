@@ -4,6 +4,8 @@
 
 You're in a cloud-based development environment with **Kiro CLI** pre-installed — an agentic AI tool that enables spec-driven development, context engineering, and human-agent collaboration.
 
+[Original Workshop URL](https://catalog.us-east-1.prod.workshops.aws/workshops/64829414-4bff-414b-952d-b073102fe471/en-US)
+
 ## Getting Started
 
 All the info you need is in the workshop guide. Follow the modules to deploy a real serverless application, walk through specs and steering files, run a full bug fix cycle, and measure productivity impact.
