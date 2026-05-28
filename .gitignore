@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+cdk/node_modules/
+
+# Build outputs
+cdk.out/
+cdk/cdk.out/
+*.js.map
+cdk/bin/*.js
+cdk/bin/*.d.ts
+cdk/lib/*.js
+cdk/lib/*.d.ts
+cdk/test/*.js
+cdk/test/*.d.ts
+
+# CDK deploy artifacts
+cdk-outputs.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Test results
+test-results/
+
+# OS files
+.DS_Store
+
+# Temp files
+/tmp/
+*.tmp

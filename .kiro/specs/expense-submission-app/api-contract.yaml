@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: Expense Submission API
+  description: |
+    API contract for the Expense Submission App.
+    IMPORTANT: All request/response bodies use snake_case field names on the wire.
+    The frontend converts to/from camelCase in the API client layer (api.js).
+  version: 1.0.0
+
+servers:
+  - url: https://9dw70dsk6l.execute-api.us-east-1.amazonaws.com/prod
+    description: Production (deployed)
+
+security:
+  - cognitoAuth: []
+
+paths:
+  /expenses/extract:
+    post:
+      summary: Extract expense details from a receipt image
+      description: Sends a base64-encoded receipt image to Bedrock for extraction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image, content_type]
+              properties:
+                image:
+                  type: string
+                  description: Base64-encoded image data
+                content_type:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp]
+            example:
+              image: "/9j/4AAQSkZJRg..."
+              content_type: "image/jpeg"
+      responses:
+        '200':
+          description: Extraction successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExtractedExpense'
+              example:
+                data:
+                  merchant_name: "Starbucks - Lan Vien"
+                  date: "2019-03-18"
+                  total_amount: 88000
+                  currency: "VND"
+                  tax_amount: 8000
+                  payment_method: "Cash"
+                  line_items:
+                    - description: "Mon Nuoc Caffe Mocha G"
+                      quantity: 1
+                      unit_price: 88000
+                  category: "Food"
+        '422':
+          description: Extraction failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Bedrock service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /expenses:
+    post:
+      summary: Save an accepted expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseInput'
+            example:
+              merchant_name: "Uber"
+              date: "2025-11-20"
+              total_amount: 8.26
+              currency: "GBP"
+              tax_amount: null
+              payment_method: "American Express 2008"
+              line_items:
+                - description: "Trip fare"
+                  quantity: 1
+                  unit_price: 9.24
+                - description: "Currency conversion fee"
+                  quantity: 1
+                  unit_price: 0.12
+              category: "Travel"
+              status: "accepted"
+      responses:
+        '201':
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExpenseRecord'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: "INVALID_REQUEST"
+                  message: "Missing required fields: merchant_name, total_amount"
+
+    get:
+      summary: List all expenses for the authenticated user
+      responses:
+        '200':
+          description: List of expenses sorted by date descending
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExpenseRecord'
+
+components:
+  securitySchemes:
+    cognitoAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito ID token in Authorization header (no "Bearer" prefix)
+
+  schemas:
+    ExtractedExpense:
+      type: object
+      required: [merchant_name, date, total_amount]
+      properties:
+        merchant_name:
+          type: string
+        date:
+          type: string
+          format: date
+        total_amount:
+          type: number
+        currency:
+          type: string
+        tax_amount:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+          nullable: true
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        category:
+          type: string
+          nullable: true
+
+    ExpenseInput:
+      type: object
+      required: [merchant_name, date, total_amount]
+      properties:
+        merchant_name:
+          type: string
+        date:
+          type: string
+          format: date
+        total_amount:
+          type: number
+        currency:
+          type: string
+          default: "USD"
+        tax_amount:
+          type: number
+          nullable: true
+        payment_method:
+          type: string
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        category:
+          type: string
+        status:
+          type: string
+          default: "accepted"
+
+    ExpenseRecord:
+      type: object
+      properties:
+        userId:
+          type: string
+          description: Cognito sub (DynamoDB PK, camelCase in storage)
+        expenseId:
+          type: string
+          format: uuid
+        merchantName:
+          type: string
+        date:
+          type: string
+          format: date
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        taxAmount:
+          type: number
+        paymentMethod:
+          type: string
+        lineItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/LineItem'
+        category:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    LineItem:
+      type: object
+      properties:
+        description:
+          type: string
+        quantity:
+          type: number
+        unit_price:
+          type: number
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
