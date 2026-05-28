@@ -122,3 +122,7 @@ Check in the console if the CloudFront url can be reached. The app might still b
 ## Receipt extraction service is temporarily unavailable
 
 If you get this error when uploading a receipt...
+
+## Running pytest
+
+Install python, create a venv, install pytest globally.

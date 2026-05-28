@@ -30,3 +30,6 @@ test-results/
 # Temp files
 /tmp/
 *.tmp
+
+# python virtual env
+.venv
