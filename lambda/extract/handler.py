@@ -32,9 +32,9 @@ import boto3
 # Module-level setup (re-used across warm starts)
 # ---------------------------------------------------------------------------
 logger = get_logger("extract")
-bedrock_client = boto3.client("bedrock-runtime")
+bedrock_client = boto3.client("bedrock-runtime", region_name="eu-west-1")
 BEDROCK_MODEL_ID = os.environ.get(
-    "BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6"
+    "BEDROCK_MODEL_ID", "qwen.qwen3-vl-235b-a22b"
 )
 
 CORS_HEADERS = {
@@ -97,54 +97,54 @@ def _get_user_id(event: dict) -> str | None:
 
 
 def call_bedrock(image_bytes: bytes, content_type: str) -> dict:
-    """Invoke Bedrock Claude with the receipt image and return the raw API response."""
-    media_type = content_type if content_type else "image/jpeg"
+    """Invoke Bedrock via the Converse API with the receipt image."""
+    # Determine image format for the Converse API
+    fmt_map = {
+        "image/jpeg": "jpeg",
+        "image/jpg": "jpeg",
+        "image/png": "png",
+        "image/gif": "gif",
+        "image/webp": "webp",
+    }
+    image_format = fmt_map.get((content_type or "image/jpeg").lower(), "jpeg")
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    request_body = json.dumps(
+    messages = [
         {
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4096,
-            "messages": [
+            "role": "user",
+            "content": [
                 {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": image_b64,
-                            },
-                        },
-                        {"type": "text", "text": EXTRACTION_PROMPT},
-                    ],
-                }
+                    "image": {
+                        "format": image_format,
+                        "source": {"bytes": image_b64},
+                    }
+                },
+                {"text": EXTRACTION_PROMPT},
             ],
         }
-    )
+    ]
 
     start = time.time()
-    response = bedrock_client.invoke_model(
+    response = bedrock_client.converse(
         modelId=BEDROCK_MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=request_body,
+        messages=messages,
     )
     latency_ms = int((time.time() - start) * 1000)
 
-    response_body = json.loads(response["body"].read())
-    return response_body, latency_ms
+    return response, latency_ms
 
 
 def parse_bedrock_response(response_body: dict) -> dict:
-    """Extract the JSON payload from the Bedrock Claude response."""
-    # Claude returns content as a list; the text block contains our JSON.
-    content_blocks = response_body.get("content", [])
+    """Extract the JSON payload from the Bedrock Converse API response."""
+    content_blocks = (
+        response_body.get("output", {})
+        .get("message", {})
+        .get("content", [])
+    )
     text = ""
     for block in content_blocks:
-        if block.get("type") == "text":
-            text = block.get("text", "")
+        if "text" in block:
+            text = block["text"]
             break
 
     if not text:
@@ -153,7 +153,6 @@ def parse_bedrock_response(response_body: dict) -> dict:
     # Strip markdown fences if the model wrapped the JSON
     cleaned = text.strip()
     if cleaned.startswith("```"):
-        # Remove opening fence (possibly ```json)
         cleaned = cleaned.split("\n", 1)[-1]
     if cleaned.endswith("```"):
         cleaned = cleaned.rsplit("```", 1)[0]
@@ -218,8 +217,8 @@ def handler(event, context):
             extra={
                 "request_id": request_id,
                 "model_id": BEDROCK_MODEL_ID,
-                "input_tokens": usage.get("input_tokens"),
-                "output_tokens": usage.get("output_tokens"),
+                "input_tokens": usage.get("inputTokens"),
+                "output_tokens": usage.get("outputTokens"),
                 "latency_ms": latency_ms,
             },
         )

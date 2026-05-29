@@ -58,7 +58,7 @@ export class ExpenseAppStack extends cdk.Stack {
     });
 
     // Lambda functions with log groups (Task 1.4)
-    const bedrockModelId = 'anthropic.claude-sonnet-4-6';
+    const bedrockModelId = 'qwen.qwen3-vl-235b-a22b';
 
     this.extractFunction = new lambda.Function(this, 'ExtractFunction', {
       runtime: lambda.Runtime.PYTHON_3_12,

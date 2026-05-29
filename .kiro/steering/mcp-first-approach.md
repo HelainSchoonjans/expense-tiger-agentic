@@ -10,6 +10,12 @@ changelog:
 
 When working with AWS services, always consult the relevant MCP server(s) before writing code. This ensures implementations are grounded in current documentation, APIs, and best practices.
 
+Terminal Configuration (CRITICAL)
+ALWAYS use WSL2 zsh/bash commands
+NEVER use PowerShell or cmd syntax
+Use Unix syntax for ALL commands
+Forward slashes in all paths
+
 ## Workflow
 
 1. Identify which AWS service(s) the task involves
